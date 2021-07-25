@@ -7,8 +7,8 @@ import * as Styled from './App.style'
 function App() {
   const [micStream, setMicStream] = useState()
   const [isRecording, setRecording] = useState(false)
-  const [resultData, setResultData] = useState()
-  const [audioBuffer] = React.useState(
+  const [result, setResult] = useState()
+  const [audioBuffer] = useState(
     (function () {
       let buffer = []
       function add(raw) {
@@ -36,9 +36,7 @@ function App() {
 
   const handleStartRecording = () => {
     audioBuffer.reset()
-    setResultData(null)
-
-    console.log('started', { micStream, data: audioBuffer.getData() })
+    setResult({})
 
     window.navigator.mediaDevices
       .getUserMedia({ video: false, audio: true })
@@ -58,15 +56,16 @@ function App() {
   }
 
   const handleStopRecording = () => {
-    setRecording(false)
     if (micStream) {
       micStream.stop()
     }
-
-    const resultArray = audioBuffer.getData()
-    setResultData(resultArray)
-
-    console.log('stopped', { micStream, data: resultArray })
+    setRecording(false)
+    setResult({
+      byteArray: audioBuffer.getData(),
+      time: micStream.audioInput.context.currentTime,
+      sampleRate: micStream.audioInput.context.sampleRate,
+    })
+    console.log('stopped', { micStream, result })
   }
 
   const [audioContext, setAudioContext] = useState()
@@ -84,15 +83,13 @@ function App() {
   }, [])
 
   const handlePlayback = () => {
-    const sampleRate = 48000
-    const numberOfSamples = 88200
-
-    const buffer = audioContext.createBuffer(2, numberOfSamples, sampleRate)
+    const { byteArray, sampleRate, time } = result
+    const length = time * sampleRate
+    const buffer = audioContext.createBuffer(2, length, sampleRate)
     const buf = buffer.getChannelData(0)
-    for (let i = 0; i < resultData.length; ++i) {
-      buf[i] = resultData[i]
+    for (let i = 0; i < byteArray.length; ++i) {
+      buf[i] = byteArray[i]
     }
-
     const source = audioContext.createBufferSource()
     source.buffer = buffer
     source.connect(audioContext.destination)
@@ -100,35 +97,31 @@ function App() {
   }
 
   const handleUploadData = () => {
+    // todo: some server receiving data?
     fetch('http://locaalhost:3030/api/uploadAaudio', {
-      // todo: some server receiving data?
       method: 'POST',
       headers: {
         'Content-Type': 'application/octet-stream', // todo: which content-type?
       },
-      body: resultData, // todo: byte array or another data format?
+      body: result.byteArray, // todo: byte array or another data format?
     })
       .then((success) => console.log({ success }))
       .catch((error) => console.log({ error }))
   }
 
   return (
-    <div>
-      <Styled.Content>
-        <Styled.Title>Record audio</Styled.Title>
-        <Styled.Row>
-          <Styled.Button onClick={handleStartRecording}>Start</Styled.Button>
-          <Styled.Button onClick={handleStopRecording}>Stop</Styled.Button>
-        </Styled.Row>
-        <Styled.RecordingState>{`isRecording: ${isRecording}`}</Styled.RecordingState>
-        {resultData && (
-          <Styled.Button onClick={handlePlayback}>Play</Styled.Button>
-        )}
-        {resultData && (
-          <Styled.Button onClick={handleUploadData}>Upload data</Styled.Button>
-        )}
-      </Styled.Content>
-    </div>
+    <Styled.Content>
+      <Styled.Title>Record audio</Styled.Title>
+      <Styled.Row>
+        <Styled.Button onClick={handleStartRecording}>Start</Styled.Button>
+        <Styled.Button onClick={handleStopRecording}>Stop</Styled.Button>
+      </Styled.Row>
+      <Styled.RecordingState>{`isRecording: ${isRecording}`}</Styled.RecordingState>
+      {result && <Styled.Button onClick={handlePlayback}>Play</Styled.Button>}
+      {result && (
+        <Styled.Button onClick={handleUploadData}>Upload data</Styled.Button>
+      )}
+    </Styled.Content>
   )
 }
 
