@@ -71,6 +71,18 @@ function App() {
 
   // const handlePlayback = () => {}
 
+  const handleUploadData = () => {
+    fetch('http://locaalhost:3030', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/octet-stream',
+      },
+      body: resultData,
+    })
+      .then((success) => console.log({ success }))
+      .catch((error) => console.log({ error }))
+  }
+
   return (
     <div>
       <Styled.Content>
@@ -81,6 +93,9 @@ function App() {
         </Styled.Row>
         <Styled.RecordingState>{`isRecording: ${isRecording}`}</Styled.RecordingState>
         {/* {resultData && <button onClick={handlePlayback}>Play</button>} */}
+        {resultData && (
+          <Styled.Button onClick={handleUploadData}>Upload data</Styled.Button>
+        )}
       </Styled.Content>
     </div>
   )
