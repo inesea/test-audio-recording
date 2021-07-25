@@ -1,0 +1,10 @@
+{
+  "eslint.validate": ["javascript", "javascriptreact"],
+  "editor.formatOnType": true,
+  "editor.tabSize": 4,
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "files.exclude": {},
+  "eslint.workingDirectories": ["./src"],
+  "cSpell.words": ["dataavailable"]
+}
