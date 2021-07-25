@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 import MicrophoneStream from 'microphone-stream'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import './App.css'
 import * as Styled from './App.style'
 
@@ -69,15 +69,44 @@ function App() {
     console.log('stopped', { micStream, data: resultArray })
   }
 
-  // const handlePlayback = () => {}
+  const [audioContext, setAudioContext] = useState()
+  useEffect(() => {
+    if (!window.AudioContext) {
+      if (!window.webkitAudioContext) {
+        alert(
+          'Your browser does not support any AudioContext and cannot play back this audio.'
+        )
+        return
+      }
+      window.AudioContext = window.webkitAudioContext
+    }
+    setAudioContext(new AudioContext())
+  }, [])
+
+  const handlePlayback = () => {
+    const sampleRate = 48000
+    const numberOfSamples = 88200
+
+    const buffer = audioContext.createBuffer(2, numberOfSamples, sampleRate)
+    const buf = buffer.getChannelData(0)
+    for (let i = 0; i < resultData.length; ++i) {
+      buf[i] = resultData[i]
+    }
+
+    const source = audioContext.createBufferSource()
+    source.buffer = buffer
+    source.connect(audioContext.destination)
+    source.start(0)
+  }
 
   const handleUploadData = () => {
-    fetch('http://locaalhost:3030', {
+    fetch('http://locaalhost:3030/api/uploadAaudio', {
+      // todo: some server receiving data?
       method: 'POST',
       headers: {
-        'Content-Type': 'application/octet-stream',
+        'Content-Type': 'application/octet-stream', // todo: which content-type?
       },
-      body: resultData,
+      body: resultData, // todo: byte array or another data format?
     })
       .then((success) => console.log({ success }))
       .catch((error) => console.log({ error }))
@@ -92,7 +121,9 @@ function App() {
           <Styled.Button onClick={handleStopRecording}>Stop</Styled.Button>
         </Styled.Row>
         <Styled.RecordingState>{`isRecording: ${isRecording}`}</Styled.RecordingState>
-        {/* {resultData && <button onClick={handlePlayback}>Play</button>} */}
+        {resultData && (
+          <Styled.Button onClick={handlePlayback}>Play</Styled.Button>
+        )}
         {resultData && (
           <Styled.Button onClick={handleUploadData}>Upload data</Styled.Button>
         )}
