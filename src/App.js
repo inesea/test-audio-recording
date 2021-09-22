@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react'
 import './App.css'
 import * as Styled from './App.style'
 
-function App() {
+function App() {  
   const [micStream, setMicStream] = useState()
   const [isRecording, setRecording] = useState(false)
   const [result, setResult] = useState()
@@ -41,7 +41,13 @@ function App() {
     window.navigator.mediaDevices
       .getUserMedia({ video: false, audio: true })
       .then((stream) => {
-        const startMic = new MicrophoneStream()
+
+        const startMic = new MicrophoneStream({
+          context: new AudioContext({
+            sampleRate: 16000
+          })
+        })
+
         startMic.setStream(stream)
         startMic.on('data', (chunk) => {
           const raw = MicrophoneStream.toRaw(chunk)
@@ -65,7 +71,11 @@ function App() {
       time: micStream.audioInput.context.currentTime,
       sampleRate: micStream.audioInput.context.sampleRate,
     })
-    console.log('stopped', { micStream, result })
+    console.log('stopped', { micStream, result: {
+      byteArray: audioBuffer.getData(),
+      time: micStream.audioInput.context.currentTime,
+      sampleRate: micStream.audioInput.context.sampleRate,
+    } })
   }
 
   const [audioContext, setAudioContext] = useState()
@@ -97,13 +107,13 @@ function App() {
   }
 
   const handleUploadData = () => {
-    // todo: some server receiving data?
-    fetch('http://locaalhost:3030/api/uploadAaudio', {
+    fetch('http://locaalhost:3030/api/audio', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/octet-stream', // todo: which content-type?
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
       },
-      body: result.byteArray, // todo: byte array or another data format?
+      body: JSON.stringify(result.byteArray), 
     })
       .then((success) => console.log({ success }))
       .catch((error) => console.log({ error }))
